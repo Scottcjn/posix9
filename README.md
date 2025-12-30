@@ -73,4 +73,19 @@ MIT
 
 ## Status
 
-🚧 Work in progress - File I/O layer first
+✅ **POSIX Foundation Complete** - Ready for SSH server port!
+
+### What's Done
+- File I/O (open/read/write/close/stat)
+- Directory operations (opendir/readdir/mkdir)
+- Path translation (POSIX ↔ Mac paths)
+- BSD sockets (via Open Transport)
+- POSIX threads (via Thread Manager)
+- Signals (emulated with polling)
+- Time functions (time/localtime/strftime)
+- Environment (getenv/setenv)
+- Misc utilities (sleep, random, etc.)
+
+### In Progress
+- Dropbear SSH server port
+- OS 9 installer package

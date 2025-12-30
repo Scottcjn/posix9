@@ -1,0 +1,16 @@
+# POSIX9 SSH Authorized Keys
+#
+# Add your SSH public keys here, one per line.
+# Format: ssh-rsa AAAAB3... user@host
+#
+# To get your public key:
+# - Linux/Mac: cat ~/.ssh/id_rsa.pub
+# - Windows: type %USERPROFILE%\.ssh\id_rsa.pub
+#
+# To use this file:
+# 1. Copy to "System Folder:Preferences:dropbear:authorized_keys"
+# 2. Add your public key(s) below
+# 3. Remove the .sample extension and this header
+
+# Example (replace with your actual key):
+# ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... user@example.com

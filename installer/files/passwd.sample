@@ -1,0 +1,12 @@
+# POSIX9 SSH Password File
+# Format: username:password
+#
+# SECURITY WARNING: Passwords are stored in plaintext!
+# For better security, use public key authentication instead.
+#
+# To use this file:
+# 1. Copy to "System Folder:Preferences:dropbear:passwd"
+# 2. Edit usernames and passwords below
+# 3. Remove the .sample extension
+
+root:changeme
