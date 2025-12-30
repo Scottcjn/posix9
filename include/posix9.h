@@ -12,6 +12,9 @@
 #include "posix9/errno.h"
 #include "posix9/socket.h"
 #include "posix9/pthread.h"
+#include "posix9/signal.h"
+#include "posix9/time.h"
+#include "posix9/unistd.h"
 
 #ifdef __cplusplus
 extern "C" {

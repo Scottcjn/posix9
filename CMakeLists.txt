@@ -11,6 +11,8 @@ set(POSIX9_SOURCES
     src/posix9_path.c
     src/posix9_socket.c
     src/posix9_thread.c
+    src/posix9_signal.c
+    src/posix9_misc.c
 )
 
 # Include directories
