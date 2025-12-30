@@ -10,6 +10,8 @@
 
 #include "posix9/types.h"
 #include "posix9/errno.h"
+#include "posix9/socket.h"
+#include "posix9/pthread.h"
 
 #ifdef __cplusplus
 extern "C" {

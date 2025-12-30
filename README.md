@@ -24,12 +24,12 @@ Enable modern Unix tools (like SSH, Python, etc.) to compile and run on Mac OS 9
 │  POSIX Application                  │
 ├─────────────────────────────────────┤
 │  posix9 shim library                │
-│  ├── posix9_file.c    (file I/O)   │
-│  ├── posix9_dir.c     (directories)│
-│  ├── posix9_socket.c  (networking) │
-│  ├── posix9_thread.c  (pthreads)   │
-│  ├── posix9_signal.c  (signals)    │
-│  └── posix9_path.c    (path xlat)  │
+│  ├── posix9_file.c    (file I/O)   │  ✅ Done
+│  ├── posix9_dir.c     (directories)│  ✅ Done
+│  ├── posix9_socket.c  (networking) │  ✅ Done
+│  ├── posix9_thread.c  (pthreads)   │  ✅ Done
+│  ├── posix9_signal.c  (signals)    │  🚧 TODO
+│  └── posix9_path.c    (path xlat)  │  ✅ Done
 ├─────────────────────────────────────┤
 │  Mac OS 9 Toolbox                   │
 │  ├── File Manager (FSSpec)          │
