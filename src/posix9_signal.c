@@ -16,8 +16,10 @@
 #include "posix9.h"
 #include "posix9/signal.h"
 
-#include <Events.h>
-#include <Timer.h>
+/* Mac OS headers */
+#include <Multiverse.h>
+#include "MacCompat.h"      /* Missing definitions for Retro68 */
+#include "Timer.h"          /* Our stub for Time Manager */
 #include <string.h>
 
 /* ============================================================
@@ -473,8 +475,8 @@ unsigned int alarm(unsigned int seconds)
     /* Set up new alarm */
     memset(&alarm_task, 0, sizeof(alarm_task));
     alarm_task.tmAddr = NewTimerUPP(alarm_callback);
-    alarm_task.tmWakeUp = 0;
-    alarm_task.tmReserved = 0;
+    /* tmWakeUp and tmReserved may not exist in all TMTask definitions
+     * The memset(0) handles initialization */
 
     InsXTime((QElemPtr)&alarm_task);
     PrimeTime((QElemPtr)&alarm_task, seconds * -1000);  /* Negative = milliseconds */

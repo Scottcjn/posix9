@@ -8,6 +8,18 @@
 
 #include "types.h"
 
+/* ============================================================
+ * timespec for timed operations - must be defined before use
+ * ============================================================ */
+
+#ifndef _STRUCT_TIMESPEC
+#define _STRUCT_TIMESPEC
+struct timespec {
+    time_t  tv_sec;
+    long    tv_nsec;
+};
+#endif
+
 /* Thread ID type */
 typedef unsigned long pthread_t;
 
@@ -166,14 +178,5 @@ int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
 int pthread_key_delete(pthread_key_t key);
 void *pthread_getspecific(pthread_key_t key);
 int pthread_setspecific(pthread_key_t key, const void *value);
-
-/* ============================================================
- * timespec for timed operations
- * ============================================================ */
-
-struct timespec {
-    time_t  tv_sec;
-    long    tv_nsec;
-};
 
 #endif /* POSIX9_PTHREAD_H */

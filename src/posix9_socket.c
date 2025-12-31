@@ -18,8 +18,11 @@
 #include "posix9.h"
 #include "posix9/socket.h"
 
-#include <OpenTransport.h>
-#include <OpenTptInternet.h>
+/* Mac OS headers - Multiverse for core, stubs for OT */
+#include <Multiverse.h>
+#include "MacCompat.h"              /* Missing definitions for Retro68 */
+#include "OpenTransport.h"          /* Our stub for cross-compilation */
+#include "OpenTransportProviders.h"
 #include <string.h>
 
 /* ============================================================

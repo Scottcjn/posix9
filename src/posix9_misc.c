@@ -2,19 +2,24 @@
  * posix9_misc.c - Miscellaneous POSIX functions for Mac OS 9
  *
  * Environment, time, memory, and other utilities.
+ *
+ * NOTE: System headers must be included FIRST to avoid type conflicts
+ * with newlib's definitions (time_t, pid_t, etc.)
  */
 
+/* System headers first to establish type definitions */
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+
+/* Now our POSIX9 headers - they'll skip type definitions that exist */
 #include "posix9.h"
 #include "posix9/unistd.h"
 
-#include <Files.h>
-#include <Gestalt.h>
-#include <LowMem.h>
-#include <DateTimeUtils.h>
-#include <Timer.h>
-#include <Processes.h>
-#include <string.h>
-#include <stdlib.h>
+/* Mac OS headers - Retro68 provides everything via Multiverse.h */
+#include <Multiverse.h>
+#include "MacCompat.h"      /* Missing definitions for Retro68 */
 
 /* ============================================================
  * Environment Variables

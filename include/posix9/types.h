@@ -1,6 +1,9 @@
 /*
  * posix9/types.h - POSIX type definitions for Mac OS 9
  * Part of the POSIX9 compatibility layer
+ *
+ * Note: When compiling with Retro68/newlib, many types are already
+ * defined in system headers. We use guards to avoid conflicts.
  */
 
 #ifndef POSIX9_TYPES_H
@@ -8,20 +11,83 @@
 
 #include <MacTypes.h>
 
-/* Standard POSIX types */
+/* Try to include system types first if available */
+#ifdef __NEWLIB__
+#include <sys/types.h>
+#endif
+
+/* Standard POSIX types - only define if not already defined */
+#ifndef _SSIZE_T_DECLARED
+#ifndef ssize_t
 typedef long            ssize_t;
-typedef unsigned long   size_t;
+#endif
+#endif
+
+/* size_t is always provided by the compiler */
+
+#ifndef _OFF_T_DECLARED
+#ifndef off_t
 typedef long            off_t;
-typedef unsigned short  mode_t;
-typedef short           pid_t;
-typedef unsigned long   ino_t;
+#endif
+#endif
+
+#ifndef _MODE_T_DECLARED
+#ifndef mode_t
+typedef unsigned long   mode_t;  /* Match newlib */
+#endif
+#endif
+
+#ifndef _PID_T_DECLARED
+#ifndef pid_t
+typedef int             pid_t;   /* Match newlib */
+#endif
+#endif
+
+#ifndef _INO_T_DECLARED
+#ifndef ino_t
+typedef unsigned short  ino_t;   /* Match newlib */
+#endif
+#endif
+
+#ifndef dev_t
 typedef short           dev_t;
+#endif
+
+#ifndef nlink_t
 typedef unsigned short  nlink_t;
+#endif
+
+#ifndef _UID_T_DECLARED
+#ifndef uid_t
 typedef unsigned short  uid_t;
+#endif
+#endif
+
+#ifndef _GID_T_DECLARED
+#ifndef gid_t
 typedef unsigned short  gid_t;
+#endif
+#endif
+
+#ifndef _TIME_T_DECLARED
+#ifndef time_t
 typedef long            time_t;
+#endif
+#endif
+
+#ifndef _USECONDS_T_DECLARED
+#ifndef useconds_t
+typedef unsigned long   useconds_t;     /* Microseconds for usleep() */
+#endif
+#endif
+
+#ifndef blksize_t
 typedef long            blksize_t;
+#endif
+
+#ifndef blkcnt_t
 typedef long            blkcnt_t;
+#endif
 
 /* File descriptor type - maps to Mac OS refNum internally */
 typedef short           posix9_fd_t;

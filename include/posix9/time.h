@@ -1,5 +1,8 @@
 /*
  * posix9/time.h - Time functions for Mac OS 9
+ *
+ * Note: When compiling with Retro68/newlib, time types may already
+ * be defined. We use guards to avoid conflicts.
  */
 
 #ifndef POSIX9_TIME_H
@@ -7,11 +10,22 @@
 
 #include "types.h"
 
-/* Time types */
+/* Time types - use system types if available */
+#ifndef _TIME_T_DECLARED
+#ifndef time_t
 typedef long time_t;
-typedef long clock_t;
+#endif
+#endif
 
-/* struct tm */
+#ifndef _CLOCK_T_DECLARED
+#ifndef clock_t
+typedef long clock_t;
+#endif
+#endif
+
+/* struct tm - only define if not in system headers */
+#ifndef _TM_DEFINED
+#ifndef __struct_tm_defined
 struct tm {
     int tm_sec;     /* Seconds (0-60) */
     int tm_min;     /* Minutes (0-59) */
@@ -23,23 +37,32 @@ struct tm {
     int tm_yday;    /* Day of year (0-365) */
     int tm_isdst;   /* Daylight saving time flag */
 };
+#define __struct_tm_defined 1
+#endif
+#endif
 
-/* struct timeval (also in socket.h) */
+/* struct timeval - check multiple guards */
 #ifndef _STRUCT_TIMEVAL
-#define _STRUCT_TIMEVAL
+#ifndef _TIMEVAL_DEFINED
 struct timeval {
     long tv_sec;    /* Seconds */
     long tv_usec;   /* Microseconds */
 };
+#define _STRUCT_TIMEVAL 1
+#define _TIMEVAL_DEFINED 1
+#endif
 #endif
 
-/* struct timespec (also in pthread.h) */
+/* struct timespec - check multiple guards */
 #ifndef _STRUCT_TIMESPEC
-#define _STRUCT_TIMESPEC
+#ifndef _TIMESPEC_DEFINED
 struct timespec {
     time_t tv_sec;  /* Seconds */
     long tv_nsec;   /* Nanoseconds */
 };
+#define _STRUCT_TIMESPEC 1
+#define _TIMESPEC_DEFINED 1
+#endif
 #endif
 
 /* struct timezone */

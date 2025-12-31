@@ -12,10 +12,9 @@
 
 #include "posix9.h"
 
-#include <Files.h>
-#include <Folders.h>
-#include <Errors.h>
-#include <TextUtils.h>
+/* Mac OS headers - Retro68 provides everything via Multiverse.h */
+#include <Multiverse.h>
+#include "MacCompat.h"      /* Missing definitions for Retro68 */
 #include <string.h>
 #include <stdarg.h>
 

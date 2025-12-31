@@ -1,91 +1,312 @@
-# POSIX9 - POSIX Compatibility Layer for Mac OS 9
+# POSIX9 - POSIX Compatibility Layer for Classic Mac OS
 
-A shim library providing POSIX-compatible APIs on top of Mac OS 9 Toolbox calls.
+A shim library providing POSIX-compatible APIs on top of Classic Mac OS Toolbox calls, enabling modern Unix software to compile and run on vintage Macintosh computers.
 
-## Goal
+## Supported Platforms
 
-Enable modern Unix tools (like SSH, Python, etc.) to compile and run on Mac OS 9 by providing:
-- POSIX file I/O (`open`, `read`, `write`, `close`, `lseek`, `stat`)
-- Directory operations (`opendir`, `readdir`, `closedir`, `mkdir`)
-- Socket networking via Open Transport
-- Threading via Thread Manager / MP Services
-- Signal emulation via Deferred Tasks
+| Platform | CPU | OS Version | Toolchain | Status |
+|----------|-----|------------|-----------|--------|
+| **68K Mac** | 68020+ | System 7.0 - 8.1 | Retro68 (m68k) | Supported |
+| **PowerPC Mac** | G3/G4/G5 | Mac OS 7.5.2 - 9.2.2 | Retro68 (ppc) | Primary |
 
-## Target Platform
+## Features
 
-- Mac OS 9.0 - 9.2.2
-- PowerPC (G3/G4)
-- CodeWarrior Pro or Retro68 toolchain
+- **File I/O**: `open`, `read`, `write`, `close`, `lseek`, `stat`, `fstat`, `unlink`
+- **Directories**: `opendir`, `readdir`, `closedir`, `mkdir`, `rmdir`, `chdir`, `getcwd`
+- **Path Translation**: Automatic POSIX ↔ Mac path conversion
+- **Sockets**: BSD socket API via Open Transport (Mac OS 8.6+)
+- **Threads**: POSIX threads via Thread Manager
+- **Signals**: Emulated signal handling via Deferred Tasks
+- **Time**: `time`, `localtime`, `strftime`, `gettimeofday`
+- **Environment**: `getenv`, `setenv`, `unsetenv`
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────┐
-│  POSIX Application                  │
+│  POSIX Application (SSH, etc.)      │
 ├─────────────────────────────────────┤
-│  posix9 shim library                │
-│  ├── posix9_file.c    (file I/O)   │  ✅ Done
-│  ├── posix9_dir.c     (directories)│  ✅ Done
-│  ├── posix9_socket.c  (networking) │  ✅ Done
-│  ├── posix9_thread.c  (pthreads)   │  ✅ Done
-│  ├── posix9_signal.c  (signals)    │  🚧 TODO
-│  └── posix9_path.c    (path xlat)  │  ✅ Done
+│  libposix9.a                        │
+│  ├── posix9_file.c    (file I/O)   │
+│  ├── posix9_dir.c     (directories)│
+│  ├── posix9_path.c    (path xlat)  │
+│  ├── posix9_thread.c  (pthreads)   │
+│  ├── posix9_signal.c  (signals)    │
+│  ├── posix9_socket.c  (networking) │
+│  └── posix9_misc.c    (utilities)  │
 ├─────────────────────────────────────┤
-│  Mac OS 9 Toolbox                   │
-│  ├── File Manager (FSSpec)          │
-│  ├── Open Transport                 │
-│  ├── Thread Manager / MP Services   │
-│  └── Notification Manager           │
+│  Mac OS Toolbox                     │
+│  ├── File Manager (FSSpec/HFS)     │
+│  ├── Open Transport (TCP/IP)       │
+│  ├── Thread Manager                │
+│  └── Time Manager                  │
 └─────────────────────────────────────┘
 ```
 
 ## Path Translation
 
-| POSIX | Mac OS 9 |
-|-------|----------|
-| `/` (root) | Volume root |
-| `/Volumes/Macintosh HD/foo` | `Macintosh HD:foo` |
-| `/Users/scott/file.txt` | `Macintosh HD:Users:scott:file.txt` |
-| `./relative/path` | `:relative:path` |
+POSIX9 automatically converts between POSIX and Mac paths:
 
-## Building
+| POSIX Path | Mac Path |
+|------------|----------|
+| `/` | Volume root (default volume) |
+| `/Volumes/Macintosh HD/Users/scott` | `Macintosh HD:Users:scott` |
+| `./foo/bar` | `:foo:bar` |
+| `../parent` | `::parent` |
 
-### With Retro68
+## Building with Retro68
+
+### Prerequisites
+
+1. **Retro68 Cross-Compiler**: https://github.com/autc04/Retro68
+
 ```bash
+# Clone Retro68
+git clone https://github.com/autc04/Retro68.git
+cd Retro68
+
+# Build for both 68K and PowerPC
 mkdir build && cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/retro68/m68k-apple-macos/cmake/retro68.toolchain.cmake
-make
+../build-toolchain.bash --ppc-only   # PowerPC only (faster)
+# OR
+../build-toolchain.bash               # Full build (68K + PPC)
 ```
 
-### With CodeWarrior
-Import the `.mcp` project file.
+### Building POSIX9
 
-## Prior Art
+#### PowerPC Build (Mac OS 7.5.2 - 9.2.2)
 
-- **MachTen** - Full BSD on Mac OS (commercial, discontinued)
+```bash
+cd posix9
+./build-ppc.sh
+```
+
+This creates `build-ppc/libposix9.a` (~50KB) with the following modules:
+- `posix9_dir.o` - Directory operations
+- `posix9_file.o` - File I/O
+- `posix9_path.o` - Path translation
+- `posix9_signal.o` - Signal emulation
+- `posix9_thread.o` - POSIX threads
+
+#### 68K Build (System 7.0 - 8.1)
+
+```bash
+cd posix9
+./build-68k.sh
+```
+
+### Building Your Application
+
+```bash
+# Set environment variables
+export RETRO68_PREFIX="$HOME/Retro68/build/toolchain"
+export POSIX9_LIB="/path/to/posix9/build-ppc/libposix9.a"
+export POSIX9_INC="/path/to/posix9/include"
+
+# Compile (PowerPC)
+$RETRO68_PREFIX/bin/powerpc-apple-macos-gcc \
+    -O2 \
+    -I"$POSIX9_INC" \
+    -I"$POSIX9_INC/mac_stubs" \
+    -c myapp.c -o myapp.o
+
+# Link
+$RETRO68_PREFIX/bin/powerpc-apple-macos-gcc \
+    myapp.o "$POSIX9_LIB" -o myapp.xcoff
+
+# Convert to PEF (Mac executable)
+$RETRO68_PREFIX/bin/MakePEF myapp.xcoff -o myapp.pef
+```
+
+## API Reference
+
+### File I/O
+
+```c
+#include "posix9.h"
+
+int fd = open("/path/to/file", O_RDONLY);
+char buf[1024];
+ssize_t n = read(fd, buf, sizeof(buf));
+close(fd);
+
+// Create file
+fd = open("/new/file.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+write(fd, "Hello Mac OS 9!\n", 16);
+close(fd);
+```
+
+### Directories
+
+```c
+DIR *dir = opendir("/");
+struct dirent *ent;
+while ((ent = readdir(dir)) != NULL) {
+    printf("%s\n", ent->d_name);
+}
+closedir(dir);
+
+mkdir("/new/directory", 0755);
+chdir("/some/path");
+getcwd(buf, sizeof(buf));
+```
+
+### Path Translation
+
+```c
+char mac_path[256];
+posix9_path_to_mac("/Volumes/Macintosh HD/file.txt", mac_path, sizeof(mac_path));
+// Result: "Macintosh HD:file.txt"
+
+char posix_path[256];
+posix9_path_from_mac("Macintosh HD:Users:scott", posix_path, sizeof(posix_path));
+// Result: "/Volumes/Macintosh HD/Users/scott"
+```
+
+### Sockets (Mac OS 8.6+ with Open Transport)
+
+```c
+int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+struct sockaddr_in addr;
+addr.sin_family = AF_INET;
+addr.sin_port = htons(22);
+addr.sin_addr.s_addr = inet_addr("192.168.1.1");
+
+connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+send(sock, "Hello\n", 6, 0);
+close(sock);
+```
+
+### Threads
+
+```c
+#include "posix9.h"
+
+void *thread_func(void *arg) {
+    // Thread code
+    return NULL;
+}
+
+pthread_t tid;
+pthread_create(&tid, NULL, thread_func, NULL);
+pthread_join(tid, NULL);
+```
+
+## Limitations
+
+### No Process Model
+Mac OS 9 has no true process model. These functions are stubbed:
+- `fork()` - Returns -1 with `ENOSYS`
+- `exec*()` - Launches separate app (doesn't replace current process)
+- `getpid()` - Always returns 1
+
+### Networking
+- Sockets require **Open Transport** (Mac OS 8.6+)
+- System 7 has no TCP/IP stack by default
+- MacTCP is not supported
+
+### Signals
+Signals are emulated via polling. Some behaviors differ from Unix:
+- No async signal delivery (polled in event loop)
+- `SIGKILL`/`SIGSTOP` not implemented
+
+### File Systems
+- No symbolic links (HFS/HFS+ limitation)
+- 31-character filename limit (HFS)
+- No file permissions (mode is ignored)
+
+## Directory Structure
+
+```
+posix9/
+├── include/
+│   ├── posix9.h              # Main header (include this)
+│   ├── posix9/
+│   │   ├── types.h           # POSIX types
+│   │   ├── errno.h           # Error codes
+│   │   ├── socket.h          # Socket definitions
+│   │   ├── pthread.h         # Thread definitions
+│   │   ├── signal.h          # Signal definitions
+│   │   ├── time.h            # Time definitions
+│   │   └── unistd.h          # Misc definitions
+│   └── mac_stubs/
+│       ├── Multiverse.h      # Retro68 Mac API
+│       ├── MacCompat.h       # Missing Mac definitions
+│       ├── Timer.h           # Time Manager stubs
+│       ├── Threads.h         # Thread Manager stubs
+│       └── OpenTransport.h   # OT stubs
+├── src/
+│   ├── posix9_file.c         # File operations
+│   ├── posix9_dir.c          # Directory operations
+│   ├── posix9_path.c         # Path translation
+│   ├── posix9_thread.c       # POSIX threads
+│   ├── posix9_signal.c       # Signal emulation
+│   ├── posix9_socket.c       # BSD sockets
+│   └── posix9_misc.c         # Misc utilities
+├── test/
+│   ├── posix9_test.c         # Test program
+│   └── build-test.sh         # Test build script
+├── build-ppc.sh              # PowerPC build script
+├── build-68k.sh              # 68K build script
+└── README.md                 # This file
+```
+
+## Testing on Real Hardware
+
+1. Build the test program:
+```bash
+cd test
+./build-test.sh
+```
+
+2. Transfer `POSIX9 Test` to your Mac via:
+   - Floppy disk
+   - Network (AppleTalk/AFP)
+   - Serial connection (Zterm)
+   - Compact Flash adapter
+
+3. Run on Mac OS 9 - creates `POSIX9 Test Log` file with results
+
+## Related Projects
+
 - **GUSI** - Grand Unified Socket Interface by Matthias Neeracher
-- **A/UX** - Apple's Unix for 68k Macs
+- **MachTen** - Full BSD on Mac OS (commercial, discontinued)
+- **A/UX** - Apple's Unix for 68K Macs
 - **MPW POSIX** - Partial POSIX in Macintosh Programmer's Workshop
+- **Retro68** - Cross-compiler for Classic Mac OS
+
+## Target Applications
+
+POSIX9 was created to port:
+- **Dropbear SSH** - Lightweight SSH server
+- **curl/wget** - HTTP clients
+- **Python 2.x** - Scripting language
+- **Various Unix utilities**
 
 ## License
 
-MIT
+MIT License
+
+## Contributing
+
+Contributions welcome! Areas needing work:
+- [ ] Complete `posix9_socket.c` Open Transport implementation
+- [ ] Fix `posix9_misc.c` type conflicts with newlib
+- [ ] Add 68K-specific optimizations
+- [ ] Test on real System 7 hardware
+- [ ] Port more Unix software
 
 ## Status
 
-✅ **POSIX Foundation Complete** - Ready for SSH server port!
+| Module | PPC | 68K | Notes |
+|--------|-----|-----|-------|
+| posix9_file.c | OK | OK | File operations |
+| posix9_dir.c | OK | OK | Directory operations |
+| posix9_path.c | OK | OK | Path translation |
+| posix9_signal.c | OK | OK | Signal emulation |
+| posix9_thread.c | OK | OK | POSIX threads |
+| posix9_socket.c | WIP | WIP | Needs OT constants |
+| posix9_misc.c | WIP | WIP | Type conflicts |
 
-### What's Done
-- File I/O (open/read/write/close/stat)
-- Directory operations (opendir/readdir/mkdir)
-- Path translation (POSIX ↔ Mac paths)
-- BSD sockets (via Open Transport)
-- POSIX threads (via Thread Manager)
-- Signals (emulated with polling)
-- Time functions (time/localtime/strftime)
-- Environment (getenv/setenv)
-- Misc utilities (sleep, random, etc.)
-
-### In Progress
-- Dropbear SSH server port
-- OS 9 installer package
+**Current library size**: ~50KB (5 modules)

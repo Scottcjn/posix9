@@ -12,8 +12,9 @@
 
 #include "posix9.h"
 
-#include <Files.h>
-#include <Folders.h>
+/* Mac OS headers */
+#include <Multiverse.h>
+#include "MacCompat.h"      /* Missing definitions for Retro68 */
 #include <string.h>
 
 /* Default volume name if none specified */
@@ -28,6 +29,10 @@ static Boolean cwd_initialized = false;
 /* ============================================================
  * Internal Helpers
  * ============================================================ */
+
+/* Forward declarations */
+static void p2cstr(const Str255 pstr, char *cstr, size_t maxlen);
+static void c2pstr(const char *cstr, Str255 pstr);
 
 /* Initialize current working directory */
 static void init_cwd(void)
@@ -44,7 +49,7 @@ static void init_cwd(void)
     if (err == noErr) {
         /* Build path from volume root */
         /* For now, just use the volume name */
-        p_to_cstr(name, cwd_mac, sizeof(cwd_mac));
+        p2cstr(name, cwd_mac, sizeof(cwd_mac));
     } else {
         /* Fallback to root of default volume */
         strcpy(cwd_mac, default_volume);

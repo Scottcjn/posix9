@@ -1,0 +1,38 @@
+# Build directories
+build-ppc/
+build-68k/
+build/
+
+# Object files
+*.o
+*.a
+
+# Mac executables
+*.xcoff
+*.pef
+*.bin
+*.rsrc
+
+# Editor files
+*~
+*.swp
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+._*
+Thumbs.db
+
+# Test outputs
+test/*.o
+test/*.xcoff
+test/*.pef
+test/*.rsrc
+test/POSIX9*
+
+# Retro68 CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile

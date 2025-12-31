@@ -124,23 +124,39 @@ struct linger {
     int l_linger;
 };
 
-/* timeval for select() */
+/* timeval for select() - check multiple guards for compatibility */
+#ifndef _STRUCT_TIMEVAL
+#ifndef _TIMEVAL_DEFINED
+#ifndef __timeval_defined
+#ifndef _SYS__TIMEVAL_H_
 struct timeval {
     long tv_sec;
     long tv_usec;
 };
+#define _STRUCT_TIMEVAL 1
+#define _TIMEVAL_DEFINED 1
+#define __timeval_defined 1
+#endif
+#endif
+#endif
+#endif
 
-/* fd_set for select() */
+/* fd_set for select() - guard against system definition */
+#ifndef FD_SETSIZE
 #define FD_SETSIZE  256
+#endif
 
+/* Only define fd_set if not already defined by system headers
+ * Check FD_ZERO macro as a proxy for whether fd_set is defined */
+#ifndef FD_ZERO
 typedef struct fd_set {
     unsigned long fds_bits[FD_SETSIZE / 32];
 } fd_set;
-
 #define FD_ZERO(set)        memset((set), 0, sizeof(fd_set))
 #define FD_SET(fd, set)     ((set)->fds_bits[(fd) / 32] |= (1UL << ((fd) % 32)))
 #define FD_CLR(fd, set)     ((set)->fds_bits[(fd) / 32] &= ~(1UL << ((fd) % 32)))
 #define FD_ISSET(fd, set)   ((set)->fds_bits[(fd) / 32] & (1UL << ((fd) % 32)))
+#endif
 
 /* Byte order conversion (Mac OS 9 is big-endian, same as network order) */
 #define htons(x)    (x)

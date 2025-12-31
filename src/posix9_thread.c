@@ -14,8 +14,11 @@
 #include "posix9.h"
 #include "posix9/pthread.h"
 
-#include <Threads.h>
-#include <Timer.h>
+/* Mac OS headers */
+#include <Multiverse.h>
+#include "MacCompat.h"      /* Missing definitions for Retro68 */
+#include "Threads.h"        /* Our stub for Thread Manager */
+#include "Timer.h"          /* Our stub for Time Manager */
 #include <string.h>
 
 /* ============================================================
