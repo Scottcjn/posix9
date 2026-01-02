@@ -1,3 +1,5 @@
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Mac OS 9](https://img.shields.io/badge/Mac_OS-9-lightgrey)](https://github.com/Scottcjn/posix9) [![POSIX](https://img.shields.io/badge/POSIX-Compatible-green)](https://github.com/Scottcjn/posix9)
+
 # POSIX9 - POSIX Compatibility Layer for Classic Mac OS
 
 A shim library providing POSIX-compatible APIs on top of Classic Mac OS Toolbox calls, enabling modern Unix software to compile and run on vintage Macintosh computers.
@@ -132,7 +134,8 @@ close(fd);
 
 // Create file
 fd = open("/new/file.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-write(fd, "Hello Mac OS 9!\n", 16);
+write(fd, "Hello Mac OS 9!
+", 16);
 close(fd);
 ```
 
@@ -142,7 +145,8 @@ close(fd);
 DIR *dir = opendir("/");
 struct dirent *ent;
 while ((ent = readdir(dir)) != NULL) {
-    printf("%s\n", ent->d_name);
+    printf("%s
+", ent->d_name);
 }
 closedir(dir);
 
@@ -174,7 +178,8 @@ addr.sin_port = htons(22);
 addr.sin_addr.s_addr = inet_addr("192.168.1.1");
 
 connect(sock, (struct sockaddr*)&addr, sizeof(addr));
-send(sock, "Hello\n", 6, 0);
+send(sock, "Hello
+", 6, 0);
 close(sock);
 ```
 
