@@ -315,3 +315,10 @@ Contributions welcome! Areas needing work:
 | posix9_misc.c | WIP | WIP | Type conflicts |
 
 **Current library size**: ~50KB (5 modules)
+
+
+## 中文简介
+
+Elyan Labs POWER 项目 - 为 IBM POWER 和复古系统提供现代支持。
+
+Contributed by eelaine-wzw
