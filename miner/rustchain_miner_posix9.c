@@ -7,6 +7,9 @@
  * The POSIX9 layer maps socket() -> Open Transport, sleep() -> TickCount,
  * gethostbyname() -> OTInetStringToAddress, etc.
  *
+ * TLS support via BearSSL (define USE_TLS to enable HTTPS on port 443).
+ * Without USE_TLS, falls back to plain HTTP on port 8088.
+ *
  * PowerPC G4 = 2.5x Antiquity Multiplier!
  *
  * Copyright 2025-2026 RustChain Project / Elyan Labs
@@ -20,6 +23,11 @@
 
 /* Mac Toolbox - for TickCount (nonce generation) */
 #include <Multiverse.h>
+
+#ifdef USE_TLS
+/* BearSSL TLS wrapper — provides tls_connect/send/recv/close */
+#include "tls_wrapper.h"
+#endif
 
 /* ---------- POSIX9 Socket API declarations ----------
  * We declare the functions we need rather than including posix9.h
@@ -102,7 +110,15 @@ extern void posix9_cleanup(void);
 
 /* ========== CONFIGURATION ========== */
 #define NODE_HOST       "50.28.86.131"
+
+#ifdef USE_TLS
+#define NODE_PORT       443
+#define NODE_PROTO      "HTTPS"
+#else
 #define NODE_PORT       8088
+#define NODE_PROTO      "HTTP"
+#endif
+
 #define MINER_ID        "os9-posix-miner"
 #define ATTEST_INTERVAL 60      /* seconds between attestations */
 #define BUFFER_SIZE     4096
@@ -225,7 +241,66 @@ static void generate_wallet(void)
     printf("Wallet: %.16s...\n", g_wallet);
 }
 
-/* ========== HTTP CLIENT (POSIX sockets) ========== */
+/* ========== HTTP CLIENT ========== */
+
+#ifdef USE_TLS
+
+/* ---- HTTPS via BearSSL TLS wrapper ---- */
+
+static int http_post(const char *path, const char *json_body,
+                     char *response, size_t resp_size)
+{
+    size_t content_len;
+    int sent_len, request_len;
+    int received, total_received;
+
+    /* Establish TLS connection */
+    if (tls_connect(NODE_HOST, NODE_PORT) < 0) {
+        printf("  TLS connect failed: %s\n", tls_error_string());
+        return -1;
+    }
+
+    /* Build HTTP request */
+    content_len = strlen(json_body);
+    sprintf(g_send_buffer,
+        "POST %s HTTP/1.0\r\n"
+        "Host: %s\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: %lu\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "%s",
+        path, NODE_HOST,
+        (unsigned long)content_len, json_body);
+
+    /* Send over TLS */
+    request_len = strlen(g_send_buffer);
+    sent_len = tls_send(g_send_buffer, request_len);
+    if (sent_len < 0) {
+        printf("  TLS send failed: %s\n", tls_error_string());
+        tls_close();
+        return -1;
+    }
+
+    /* Receive response over TLS */
+    total_received = 0;
+    while (total_received < (int)(resp_size - 1)) {
+        received = tls_recv(response + total_received,
+                           resp_size - 1 - total_received);
+        if (received <= 0) break;
+        total_received += received;
+    }
+    response[total_received] = '\0';
+
+    /* Close TLS connection */
+    tls_close();
+
+    return (total_received > 0) ? 0 : -1;
+}
+
+#else /* !USE_TLS */
+
+/* ---- Plain HTTP via POSIX sockets ---- */
 
 static int http_post(const char *path, const char *json_body,
                      char *response, size_t resp_size)
@@ -308,6 +383,8 @@ static int http_post(const char *path, const char *json_body,
     return (total_received > 0) ? 0 : -1;
 }
 
+#endif /* USE_TLS */
+
 /* ========== ATTESTATION ========== */
 
 static void build_attestation_json(char *buffer, size_t buflen)
@@ -353,7 +430,7 @@ static int submit_attestation(void)
     char response[BUFFER_SIZE];
     int err;
 
-    printf("  Submitting attestation...\n");
+    printf("  Submitting attestation via %s...\n", NODE_PROTO);
 
     build_attestation_json(json, sizeof(json));
 
@@ -382,6 +459,9 @@ int main(void)
     printf("========================================\n");
     printf("  RustChain Miner for Mac OS 9\n");
     printf("  POSIX9 Edition - Cross-Compiled!\n");
+#ifdef USE_TLS
+    printf("  BearSSL TLS 1.2 - Secure Transport\n");
+#endif
     printf("  PowerPC G4 - 2.5x Antiquity Bonus!\n");
     printf("========================================\n");
     printf("\n");
@@ -393,6 +473,7 @@ int main(void)
     }
 
     printf("POSIX9 initialized (Open Transport ready)\n");
+    printf("Node: %s:%d (%s)\n", NODE_HOST, NODE_PORT, NODE_PROTO);
 
     generate_wallet();
 
