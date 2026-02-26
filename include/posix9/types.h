@@ -133,6 +133,8 @@ typedef short           posix9_fd_t;
 #define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
 
 /* struct stat - file information */
+#ifndef __stat_defined
+#ifndef _STRUCT_STAT
 struct stat {
     dev_t       st_dev;         /* device ID */
     ino_t       st_ino;         /* inode number (parID + name hash) */
@@ -148,6 +150,10 @@ struct stat {
     blksize_t   st_blksize;     /* optimal I/O block size */
     blkcnt_t    st_blocks;      /* number of 512-byte blocks */
 };
+#define __stat_defined 1
+#define _STRUCT_STAT 1
+#endif
+#endif
 
 /* struct dirent - directory entry */
 struct dirent {

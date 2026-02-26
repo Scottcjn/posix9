@@ -25,10 +25,8 @@ CFLAGS="-O2 -fno-exceptions -I../include -I../include/mac_stubs -w"
 
 echo "Compiling POSIX9 library..."
 
-# Files with complex conflicts to fix later
-# - posix9_misc.c: struct timespec/timeval redefinition with newlib
-# - posix9_socket.c: Open Transport stub needs more constants
-SKIP_FILES="posix9_misc.c posix9_socket.c"
+# All source files now compile (OT stub + type conflicts fixed 2026-02-26)
+SKIP_FILES=""
 
 SUCCESS_COUNT=0
 FAIL_COUNT=0

@@ -331,10 +331,19 @@ int open(const char *path, int flags, ...)
     return fd;
 }
 
+/* Socket close - implemented in posix9_socket.c */
+extern Boolean posix9_is_socket(int fd);
+extern int posix9_close_socket(int fd);
+
 int close(int fd)
 {
     posix9_fd_entry *entry;
     OSErr err;
+
+    /* Delegate socket FDs to the socket layer */
+    if (posix9_is_socket(fd)) {
+        return posix9_close_socket(fd);
+    }
 
     entry = get_fd_entry(fd);
     if (!entry) return -1;

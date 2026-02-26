@@ -8,12 +8,26 @@
 #ifndef POSIX9_H
 #define POSIX9_H
 
+/* When building with Retro68/newlib, include system headers first
+ * to get their type definitions. We only provide what's missing. */
+#ifdef __NEWLIB__
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <time.h>
+#include <errno.h>
+#define POSIX9_HAVE_NEWLIB 1
+#endif
+
+/* Now include POSIX9 headers - they check for existing definitions */
 #include "posix9/types.h"
+#ifndef POSIX9_HAVE_NEWLIB
 #include "posix9/errno.h"
 #include "posix9/socket.h"
 #include "posix9/pthread.h"
 #include "posix9/signal.h"
 #include "posix9/time.h"
+#endif
 #include "posix9/unistd.h"
 
 #ifdef __cplusplus

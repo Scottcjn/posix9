@@ -708,7 +708,11 @@ int rand(void)
 }
 
 /* For arc4random, use system entropy */
-unsigned int arc4random(void)
+/* Use __uint32_t to match newlib's declaration */
+#ifdef __NEWLIB__
+/* Newlib already provides arc4random, skip our implementation */
+#else
+uint32_t arc4random(void)
 {
     UnsignedWide us;
     Microseconds(&us);
@@ -725,6 +729,7 @@ void arc4random_buf(void *buf, size_t n)
         p[i] = (unsigned char)(arc4random() & 0xFF);
     }
 }
+#endif /* !__NEWLIB__ */
 
 /* ============================================================
  * Memory Functions

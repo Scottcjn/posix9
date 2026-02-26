@@ -11,13 +11,13 @@
 #define kTCPName    "tcp"
 #define kUDPName    "udp"
 
-/* Create TCP endpoint config */
-OTConfiguration* OTCreateConfiguration(const char* path);
+/* Create configuration from path string */
+OTConfigurationRef OTCreateConfiguration(const char* path);
 
 /* Inet services ref */
 typedef void* InetSvcRef;
 
 /* Open inet services */
-InetSvcRef OTOpenInternetServices(OTConfiguration* config, OTOpenFlags flags, OSStatus* err);
+InetSvcRef OTOpenInternetServices(OTConfigurationRef config, OTOpenFlags flags, OSStatus* err);
 
 #endif /* __OPENTRANSPORTPROVIDERS__ */

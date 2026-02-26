@@ -25,6 +25,11 @@
 #include "OpenTransportProviders.h"
 #include <string.h>
 
+/* ECANCELED might not be defined in newlib */
+#ifndef ECANCELED
+#define ECANCELED 140
+#endif
+
 /* ============================================================
  * Socket Table
  * ============================================================ */
@@ -249,8 +254,8 @@ static int ot_error_to_errno(OTResult err)
         case kOTCanceledErr:        return ECANCELED;
         case kEPERMErr:             return EPERM;
         case kENOENTErr:            return ENOENT;
-        case kEINTRErr:             return EINTR;
-        case kEIOErr:               return EIO;
+        /* kEINTRErr (-3203) == kOTBadSyncErr, handled above */
+        /* kEIOErr (-3204) == kOTCanceledErr, handled above */
         case kENXIOErr:             return ENXIO;
         case kEBADFErr:             return EBADF;
         case kEAGAINErr:            return EAGAIN;
