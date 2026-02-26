@@ -1087,3 +1087,168 @@ int posix9_close_socket(int fd)
     free_socket(fd);
     return 0;
 }
+
+/* ============================================================
+ * fcntl() - File control for sockets
+ *
+ * Critical for SSH: Dropbear uses fcntl(fd, F_SETFL, O_NONBLOCK)
+ * to put sockets into non-blocking mode for multiplexed I/O.
+ * Maps to OTSetNonBlocking/OTSetBlocking on the OT endpoint.
+ * ============================================================ */
+
+/* fcntl constants - define here since we can't include fcntl.h
+ * without pulling in all of newlib's conflicting types */
+#ifndef F_GETFL
+#define F_GETFL     3
+#endif
+#ifndef F_SETFL
+#define F_SETFL     4
+#endif
+#ifndef F_GETFD
+#define F_GETFD     1
+#endif
+#ifndef F_SETFD
+#define F_SETFD     2
+#endif
+#ifndef O_NONBLOCK
+#define O_NONBLOCK  0x0004
+#endif
+#ifndef FD_CLOEXEC
+#define FD_CLOEXEC  1
+#endif
+
+int fcntl(int fd, int cmd, ...)
+{
+    posix9_socket_entry *sock;
+
+    sock = get_socket(fd);
+    if (!sock) {
+        errno = EBADF;
+        return -1;
+    }
+
+    switch (cmd) {
+    case F_GETFL:
+        return sock->nonblocking ? O_NONBLOCK : 0;
+
+    case F_SETFL:
+        {
+            /* Extract flags from varargs - we only care about O_NONBLOCK */
+            /* On PPC calling convention the 3rd arg is in the stack frame;
+             * use a simple pointer trick since va_list pulls in headers */
+            int flags = *((int *)(&cmd) + 1);
+
+            if (flags & O_NONBLOCK) {
+                if (!sock->nonblocking) {
+                    OTSetNonBlocking(sock->ep);
+                    sock->nonblocking = true;
+                }
+            } else {
+                if (sock->nonblocking) {
+                    OTSetBlocking(sock->ep);
+                    sock->nonblocking = false;
+                }
+            }
+            return 0;
+        }
+
+    case F_GETFD:
+        /* Mac OS 9 doesn't fork, so close-on-exec is meaningless */
+        return 0;
+
+    case F_SETFD:
+        /* Accept silently - no-op on Mac OS 9 */
+        return 0;
+
+    default:
+        errno = EINVAL;
+        return -1;
+    }
+}
+
+/* ============================================================
+ * ioctl() - I/O control for sockets
+ *
+ * Dropbear needs FIONBIO (non-blocking) and TIOCGWINSZ (terminal
+ * size). FIONBIO maps to OTSetNonBlocking. Terminal ioctls are
+ * stubbed since Mac OS 9 PTY support requires Terminal Manager.
+ * ============================================================ */
+
+#ifndef FIONBIO
+#define FIONBIO     0x5421
+#endif
+#ifndef FIONREAD
+#define FIONREAD    0x541B
+#endif
+#ifndef TIOCGWINSZ
+#define TIOCGWINSZ  0x5413
+#endif
+#ifndef TIOCSWINSZ
+#define TIOCSWINSZ  0x5414
+#endif
+
+struct winsize {
+    unsigned short ws_row;
+    unsigned short ws_col;
+    unsigned short ws_xpixel;
+    unsigned short ws_ypixel;
+};
+
+int ioctl(int fd, unsigned long request, ...)
+{
+    posix9_socket_entry *sock;
+    void *argp;
+
+    sock = get_socket(fd);
+    if (!sock) {
+        errno = EBADF;
+        return -1;
+    }
+
+    /* Get the argp pointer from varargs */
+    argp = *((void **)(&request) + 1);
+
+    switch (request) {
+    case FIONBIO:
+        {
+            int *val = (int *)argp;
+            if (val && *val) {
+                OTSetNonBlocking(sock->ep);
+                sock->nonblocking = true;
+            } else {
+                OTSetBlocking(sock->ep);
+                sock->nonblocking = false;
+            }
+            return 0;
+        }
+
+    case FIONREAD:
+        {
+            /* Return 0 bytes available - conservative but safe */
+            int *val = (int *)argp;
+            if (val) *val = 0;
+            return 0;
+        }
+
+    case TIOCGWINSZ:
+        {
+            /* Return default terminal size */
+            struct winsize *ws = (struct winsize *)argp;
+            if (ws) {
+                ws->ws_row = 24;
+                ws->ws_col = 80;
+                ws->ws_xpixel = 0;
+                ws->ws_ypixel = 0;
+            }
+            return 0;
+        }
+
+    case TIOCSWINSZ:
+        /* Accept silently */
+        return 0;
+
+    default:
+        errno = EINVAL;
+        return -1;
+    }
+}
