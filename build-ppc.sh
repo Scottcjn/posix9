@@ -158,12 +158,17 @@ fi
 # Link everything
 echo ""
 echo "Linking RustChain Miner..."
+
+# Retro68 Mac OS import libraries (resolve Mac Toolbox symbols)
+IMPORT_LIBDIR="$RETRO68_PREFIX/universal/libppc"
+IMPORT_LIBS="-L$IMPORT_LIBDIR -lInterfaceLib -lOpenTransportLib -lOpenTptInternetLib -lThreadsLib"
+
 LINK_LIBS="libposix9.a"
 if [ -n "$TLS_LIBS" ]; then
     LINK_LIBS="$TLS_LIBS $LINK_LIBS"
 fi
 
-$PPC_CC -o RustChainMiner $MINER_OBJECTS $LINK_LIBS 2>&1
+$PPC_CC -o RustChainMiner $MINER_OBJECTS $LINK_LIBS $IMPORT_LIBS 2>&1
 if [ $? -eq 0 ]; then
     echo ""
     echo "========================================="
@@ -176,7 +181,7 @@ if [ $? -eq 0 ]; then
     ls -lh RustChainMiner
 else
     echo "ERROR: Link failed!"
-    $PPC_CC -o RustChainMiner $MINER_OBJECTS $LINK_LIBS 2>&1
+    $PPC_CC -o RustChainMiner $MINER_OBJECTS $LINK_LIBS $IMPORT_LIBS 2>&1
     exit 1
 fi
 

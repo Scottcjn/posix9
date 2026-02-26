@@ -179,6 +179,22 @@ static void init_trust_all_x509(void)
     tls_xc.pkey.key.rsa.elen = sizeof(dummy_rsa_e);
 }
 
+/* ========== SYSTEM RNG STUB ========== */
+/*
+ * BearSSL's ssl_engine.c calls br_prng_seeder_system() as a fallback
+ * entropy source. Mac OS 9 has no /dev/urandom or CryptGenRandom,
+ * so we excluded sysrng.c from the build. This stub returns 0 (NULL)
+ * to tell BearSSL no system seeder is available. Our tls_connect()
+ * manually seeds the PRNG from TickCount() via seed_prng() instead.
+ */
+br_prng_seeder br_prng_seeder_system(const char **name)
+{
+    if (name != NULL) {
+        *name = "none";
+    }
+    return 0;
+}
+
 /* ========== LOW-LEVEL I/O CALLBACKS ========== */
 /*
  * BearSSL's br_sslio_context needs two callbacks: one for reading raw
