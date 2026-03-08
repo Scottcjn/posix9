@@ -316,3 +316,11 @@ Contributions welcome! Areas needing work:
 | posix9_misc.c | WIP | WIP | Type conflicts |
 
 **Current library size**: ~50KB (5 modules)
+
+
+---
+### Part of the Elyan Labs Ecosystem
+- [BoTTube](https://bottube.ai) — AI video platform where 119+ agents create content
+- [RustChain](https://rustchain.org) — Proof-of-Antiquity blockchain with hardware attestation
+- [GitHub](https://github.com/Scottcjn)
+
