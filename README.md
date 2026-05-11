@@ -292,7 +292,7 @@ POSIX9 was created to port:
 
 ## License
 
-MIT License
+Apache License 2.0
 
 ## Contributing
 
