@@ -42,3 +42,18 @@ CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+
+# Vendored third-party crypto/SSH sources (users fetch these; build scripts pull them)
+dropbear-2024.86/
+libtomcrypt-1.18.2/
+libtommath-1.3.0/
+*.tar.xz
+*.tar.bz2
+*.bz2
+
+# More build output dirs
+build-dropbear-os9/
+build-static/
+
+# Test build outputs (Retro68 resource/exec forms)
+test/*.r

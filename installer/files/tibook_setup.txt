@@ -1,0 +1,94 @@
+POSIX9 SSH - PowerBook Ti Setup
+================================
+
+Target Machine: PowerBook G4 Titanium (OS 9)
+IP Address: 192.168.0.55 (DHCP) or 192.168.0.123 (static)
+Connected via: MikroTik bridge at 192.168.0.250
+
+INSTALLATION STEPS:
+-------------------
+
+1. Transfer files to TiBook:
+   - Use Fetch, Transmit, or file sharing
+   - Copy "POSIX9 SSH" folder to Applications
+
+2. Create config directory:
+   - In Finder: System Folder > Preferences
+   - Create folder named "dropbear"
+
+3. Copy configuration files:
+   - passwd.sample -> dropbear:passwd (edit passwords)
+   - authorized_keys.sample -> dropbear:authorized_keys
+   - dropbear_config -> dropbear:config
+
+4. Add Claude's public key for remote access:
+
+   In authorized_keys file, add:
+   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClaude... claude@anthropic
+
+   Or generate a new key pair and add the public key.
+
+5. Set static IP (recommended):
+   - Apple Menu > Control Panels > TCP/IP
+   - Configure: Manually
+   - IP Address: 192.168.0.123
+   - Subnet Mask: 255.255.255.0
+   - Router: 192.168.0.1
+   - Name Servers: 192.168.0.1
+
+6. First run:
+   - Double-click "Dropbear SSH" application
+   - It will generate host keys automatically
+   - Status window shows "SSH Server Running on port 22"
+
+7. Test connection:
+   From Linux/Mac:
+   ssh root@192.168.0.123
+
+   Default password: changeme (or set in passwd file)
+
+8. For auto-start:
+   - Create alias of "Dropbear SSH"
+   - Place in System Folder > Startup Items
+
+NETWORK TOPOLOGY:
+-----------------
+
+[Internet]
+    |
+[Main Router 192.168.0.1]
+    |
+    +-- [HP Victus 192.168.0.127] (this machine)
+    |
+    +-- [MikroTik Bridge 192.168.0.250]
+            |
+            +-- [PowerBook Ti 192.168.0.123]
+
+VERIFICATION:
+-------------
+
+From HP Victus, test connectivity:
+  ping 192.168.0.123
+
+SSH test:
+  ssh -o StrictHostKeyChecking=no root@192.168.0.123
+
+TROUBLESHOOTING:
+----------------
+
+"Connection refused"
+  - Is Dropbear SSH running? (check for app in menu bar)
+  - Is port 22 open? (no firewall on OS 9 by default)
+
+"Host key verification failed"
+  - Remove old key: ssh-keygen -R 192.168.0.123
+  - Try: ssh -o StrictHostKeyChecking=no root@192.168.0.123
+
+"Permission denied"
+  - Check passwd file format (user:password)
+  - Check authorized_keys file format
+  - Try password auth first, then set up keys
+
+Slow connection:
+  - Normal for G4 + crypto overhead
+  - Try: ssh -c aes128-ctr root@192.168.0.123

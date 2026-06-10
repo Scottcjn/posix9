@@ -1,0 +1,50 @@
+# POSIX9 SSH Server Configuration
+# Place in System Folder:Preferences:dropbear:config
+#
+# This file configures the Dropbear SSH server for Mac OS 9
+
+# Port to listen on (default: 22)
+port=22
+
+# Shell to execute when user logs in
+# Options:
+#   /Applications/MPW Shell     - MPW Shell (recommended)
+#   /Applications/ToolServer    - Lightweight command processor
+#   /System Folder/Extensions/ToolServer
+shell=/Applications/MPW Shell
+
+# Host key files (auto-generated on first run if missing)
+rsa_key=:System Folder:Preferences:dropbear:dropbear_rsa_host_key
+dss_key=:System Folder:Preferences:dropbear:dropbear_dss_host_key
+
+# Authentication settings
+# Set to 0 to disable, 1 to enable
+password_auth=1
+pubkey_auth=1
+
+# Password file location (optional - if missing, root:any works)
+passwd_file=:System Folder:Preferences:dropbear:passwd
+
+# Authorized keys file for public key authentication
+authorized_keys=:System Folder:Preferences:dropbear:authorized_keys
+
+# Logging
+# Levels: 0=none, 1=errors, 2=info, 3=debug
+log_level=2
+log_file=:System Folder:Preferences:dropbear:dropbear.log
+
+# Connection settings
+# Idle timeout in seconds (0 = no timeout)
+idle_timeout=0
+
+# Maximum simultaneous connections
+max_connections=4
+
+# Banner message shown before login (optional)
+# banner=:System Folder:Preferences:dropbear:banner.txt
+
+# Network interface to bind to (empty = all interfaces)
+# bind_address=
+
+# Allow root login (always 1 on OS 9 since it's single-user)
+permit_root=1
