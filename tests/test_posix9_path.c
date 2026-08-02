@@ -1,5 +1,6 @@
 #include "posix9.h"
 #include "MacCompat.h"
+#include <string.h>
 
 int posix9_errno;
 static int failures;
@@ -145,11 +146,87 @@ static void test_empty_inputs(void)
     assert_str_eq("empty Mac path", "", posix9_path_from_mac("", buf, sizeof(buf)));
 }
 
+/*
+ * Regression for a real buffer overflow: posix9_path_to_mac() and
+ * posix9_path_from_mac() bounds-check the "convert remaining path"
+ * loop against dst_size, but several earlier writes (the default-volume
+ * copy, the leading ':' run for parent directories, and a second write
+ * hiding inside the ".." case of the already bounds-checked loop) did
+ * not check dst_size at all. Any caller passing a small dst_size -
+ * exactly what the dst_size parameter exists for - got memory
+ * corruption instead of truncation. Verified with AddressSanitizer on
+ * malloc()'d buffers (heap-buffer-overflow in posix9_path_to_mac at the
+ * strcpy(d, default_volume) site, and in posix9_path_from_mac at the
+ * unbounded leading "::::" loop); this test reproduces the same three
+ * call sites on the stack with canary bytes so it runs without ASAN too.
+ */
+static void assert_no_overflow(const char *label, int corrupted)
+{
+    (void)label;
+    if (corrupted) {
+        failures++;
+    }
+}
+
+static int canary_touched(const unsigned char *canary, size_t len, unsigned char fill)
+{
+    size_t i;
+
+    for (i = 0; i < len; i++) {
+        if (canary[i] != fill) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void test_small_dst_size_does_not_overflow(void)
+{
+    /* Bug 1: posix9_path_to_mac() strcpy()'d the default volume name
+     * ("Macintosh HD", 12 bytes) straight into dst with no length check
+     * at all when the path is absolute and has no /Volumes/ prefix. */
+    struct { char buf[8]; unsigned char canary[8]; } small;
+
+    memset(&small, 0xAA, sizeof(small));
+    assert_str_eq("truncated default-volume path",
+        "Macinto", posix9_path_to_mac("/foo", small.buf, sizeof(small.buf)));
+    assert_no_overflow("default-volume copy overflow",
+        canary_touched(small.canary, sizeof(small.canary), 0xAA));
+
+    /* Bug 2: posix9_path_from_mac() wrote "/.." per leading ':' in an
+     * unconditional loop with no bounds check whatsoever, so the number
+     * of bytes written was controlled entirely by the input, not dst_size. */
+    {
+        struct { char buf[4]; unsigned char canary[16]; } tiny;
+
+        memset(&tiny, 0xBB, sizeof(tiny));
+        assert_str_eq("truncated leading-colon-run path",
+            "./f", posix9_path_from_mac("::::::::::::foo", tiny.buf, sizeof(tiny.buf)));
+        assert_no_overflow("leading colon-run overflow",
+            canary_touched(tiny.canary, sizeof(tiny.canary), 0xBB));
+    }
+
+    /* Bug 3: even inside the bounds-checked "convert remaining path"
+     * loop of posix9_path_to_mac(), the mid-path ".." case wrote a
+     * second ':' with no check, one byte past what the loop condition
+     * had just confirmed was available. */
+    {
+        struct { char buf[6]; unsigned char canary[8]; } mid;
+
+        memset(&mid, 0xCC, sizeof(mid));
+        assert_str_eq("truncated mid-path .. handling",
+            ":abc", posix9_path_to_mac("abc/../z", mid.buf, sizeof(mid.buf)));
+        assert_no_overflow("mid-path .. overflow",
+            canary_touched(mid.canary, sizeof(mid.canary), 0xCC));
+    }
+}
+
 int main(void)
 {
     test_posix_paths_to_mac_paths();
     test_mac_paths_to_posix_paths();
     test_empty_inputs();
+    test_small_dst_size_does_not_overflow();
 
     return failures == 0 ? 0 : 1;
 }

@@ -101,6 +101,8 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
     size_t out_size;
     const char *p;
     char *d;
+    char *limit;    /* one past the last byte we may write path data into;
+                     * out_size - 1 is always reserved for the NUL */
 
     /* Use static buffer if no destination provided */
     if (dst == NULL) {
@@ -111,6 +113,11 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
         out_size = dst_size;
     }
 
+    if (out_size == 0) {
+        /* Not even room for a NUL terminator - nothing safe to write. */
+        return out;
+    }
+
     if (posix_path == NULL || posix_path[0] == '\0') {
         out[0] = '\0';
         return out;
@@ -118,6 +125,7 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
 
     d = out;
     p = posix_path;
+    limit = out + out_size - 1;
 
     /* Handle absolute paths */
     if (*p == '/') {
@@ -129,15 +137,25 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
             /* Next component is volume name */
         } else {
             /* Assume default volume */
+            size_t vol_len;
+
             init_cwd();
-            strcpy(d, default_volume);
-            d += strlen(d);
-            *d++ = ':';
+            vol_len = strlen(default_volume);
+            if (vol_len > (size_t)(limit - d)) {
+                vol_len = (size_t)(limit - d);
+            }
+            memcpy(d, default_volume, vol_len);
+            d += vol_len;
+            if (d < limit) {
+                *d++ = ':';
+            }
         }
     }
     /* Handle relative paths */
     else {
-        *d++ = ':';  /* Mac relative paths start with : */
+        if (d < limit) {
+            *d++ = ':';  /* Mac relative paths start with : */
+        }
 
         /* Handle . and .. */
         if (*p == '.') {
@@ -145,7 +163,9 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
                 p++;  /* Skip . */
                 if (*p == '/') p++;
             } else if (p[1] == '.' && (p[2] == '/' || p[2] == '\0')) {
-                *d++ = ':';  /* :: means parent directory */
+                if (d < limit) {
+                    *d++ = ':';  /* :: means parent directory */
+                }
                 p += 2;
                 if (*p == '/') p++;
             }
@@ -153,7 +173,7 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
     }
 
     /* Convert remaining path components */
-    while (*p && d < out + out_size - 1) {
+    while (*p && d < limit) {
         if (*p == '/') {
             *d++ = ':';
             p++;
@@ -161,7 +181,9 @@ char *posix9_path_to_mac(const char *posix_path, char *dst, size_t dst_size)
             while (*p == '/') p++;
             /* Handle .. in middle of path */
             if (p[0] == '.' && p[1] == '.' && (p[2] == '/' || p[2] == '\0')) {
-                *d++ = ':';
+                if (d < limit) {
+                    *d++ = ':';
+                }
                 p += 2;
                 if (*p == '/') p++;
             }
@@ -196,6 +218,8 @@ char *posix9_path_from_mac(const char *mac_path, char *dst, size_t dst_size)
     size_t out_size;
     const char *p;
     char *d;
+    char *limit;    /* one past the last byte we may write path data into;
+                     * out_size - 1 is always reserved for the NUL */
 
     /* Use static buffer if no destination provided */
     if (dst == NULL) {
@@ -206,6 +230,11 @@ char *posix9_path_from_mac(const char *mac_path, char *dst, size_t dst_size)
         out_size = dst_size;
     }
 
+    if (out_size == 0) {
+        /* Not even room for a NUL terminator - nothing safe to write. */
+        return out;
+    }
+
     if (mac_path == NULL || mac_path[0] == '\0') {
         out[0] = '\0';
         return out;
@@ -213,35 +242,54 @@ char *posix9_path_from_mac(const char *mac_path, char *dst, size_t dst_size)
 
     d = out;
     p = mac_path;
+    limit = out + out_size - 1;
 
     /* Check for relative path (starts with :) */
     if (*p == ':') {
         p++;
-        *d++ = '.';
+        if (d < limit) {
+            *d++ = '.';
+        }
 
         /* Handle :: (parent directory) */
         while (*p == ':') {
+            if (limit - d < 3) {
+                /* No room for another "/.." - stop producing output but
+                 * keep consuming the colon so the rest of the path below
+                 * isn't misinterpreted. */
+                p++;
+                continue;
+            }
             *d++ = '/';
             *d++ = '.';
             *d++ = '.';
             p++;
         }
 
-        if (*p) {
+        if (*p && d < limit) {
             *d++ = '/';
         }
     }
     /* Absolute path (starts with volume name) */
     else {
-        strcpy(d, "/Volumes/");
-        d += 9;
+        size_t prefix_len = 9; /* strlen("/Volumes/") */
+        size_t avail = (size_t)(limit - d);
+
+        if (prefix_len > avail) {
+            prefix_len = avail;
+        }
+        memcpy(d, "/Volumes/", prefix_len);
+        d += prefix_len;
     }
 
     /* Convert remaining path */
-    while (*p && d < out + out_size - 1) {
+    while (*p && d < limit) {
         if (*p == ':') {
             /* Handle :: (parent directory) */
             if (p[1] == ':') {
+                if (limit - d < 3) {
+                    break;  /* not enough room left - truncate here */
+                }
                 *d++ = '/';
                 *d++ = '.';
                 *d++ = '.';
